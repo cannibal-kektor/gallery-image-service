@@ -31,6 +31,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
           server-id: 'github'
+          server-username: ${{ github.actor }}
           server-password: ${{ secrets.GH_PACKAGES_TOKEN }}
       - name: Cache Maven dependencies
         uses: actions/cache@v4

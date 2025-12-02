@@ -112,6 +112,7 @@ public class ImageController implements ImageServiceOpenApi {
             headers = "X-System-Internal-Call",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<ImageDto> getInternal(@PathVariable Long imageId) {
         return ResponseEntity.ok()
                 .body(imageService.getByIdInternal(imageId));

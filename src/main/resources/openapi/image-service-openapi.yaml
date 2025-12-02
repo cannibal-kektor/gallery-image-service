@@ -229,6 +229,47 @@ paths:
           $ref: "#/components/responses/ProblemDetailResponse"
       security:
       - bearer-token: []
+  /api/images/{imageId}/internal:
+    get:
+      tags:
+      - Image Management API
+      summary: Get image by ID for internal usage
+      description: Retrieves a specific image by its id by internal service call
+      operationId: getInternal
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: X-System-Internal-Call
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Actual image dto returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageDto"
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - internal-service: []
   /api/images/{id}:
     get:
       tags:

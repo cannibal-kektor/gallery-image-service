@@ -161,4 +161,13 @@ public interface ImageServiceOpenApi {
     @ImageDtoResponse
     ResponseEntity<ImageDto> likeImage(@ImageIdParameter Long imageId);
 
+    @Operation(
+            summary = "Get image by ID for internal usage",
+            description = "Retrieves a specific image by its id by internal service call",
+            security = @SecurityRequirement(name = INTERNAL_SERVICE_AUTH)
+
+    )
+    @ImageDtoResponse
+    ResponseEntity<ImageDto> getInternal(@ImageIdParameter Long imageId);
+
 }

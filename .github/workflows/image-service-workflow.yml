@@ -1,0 +1,58 @@
+name: CI/CD Pipeline for Image Service
+on:
+  push:
+    branches: [ main, test ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: gallery-image-service
+  DOCKER_REGISTRY: docker.io
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build-and-test:
+    name: Build + Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+
+      - name: Prepare JDK-25 with configured repository cred
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+          server-id: 'github'
+          server-password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: Build and run unit tests
+        run: mvn clean test
+
+      - name: Run integration tests
+        run: mvn integration-test
+
+      - name: Verify smoke run
+        run: mvn verify -DskipTests=true
+
+#      - name: Upload test reports
+#        uses: actions/upload-artifact@v4
+#        if: always()
+#        with:
+#          name: test-reports
+#          path: |
+#            target/surefire-reports/
+#            target/failsafe-reports/

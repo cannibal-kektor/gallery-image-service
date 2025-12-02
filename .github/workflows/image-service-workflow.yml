@@ -18,6 +18,8 @@ jobs:
     name: Build + Test
     runs-on: ubuntu-latest
 
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,8 +33,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
           server-id: 'github'
-          server-username: ${{ github.actor }}
-          server-password: ${{ secrets.GH_PACKAGES_TOKEN }}
+#          server-username: ${{ github.actor }}
+#          server-password: ${{ secrets.GH_PACKAGES_TOKEN }}
+          server-password: GH_PACKAGES_TOKEN
 
       - name: Debug - Check generated Maven settings
         run: cat ~/.m2/settings.xml || echo "Settings file not found"
@@ -40,16 +43,9 @@ jobs:
       - name: Cache Maven dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.m2
+          path: ~/.m2/repository
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
-      - name: Debug - Test GitHub Packages access
-        run: |
-          echo "Testing PAT access to the remote repo..."
-          # Эта команда попытается получить метаданные родительского POM
-          curl -s -H "Authorization: token ${{ secrets.GH_PACKAGES_TOKEN }}" \
-            https://maven.pkg.github.com/cannibal-kektor/gallery-repo/kektor/innowise/gallery/gallery-bom/1.0-SNAPSHOT/maven-metadata.xml \
-            | head -5
 
       - name: Build and run unit tests
         run: mvn clean test

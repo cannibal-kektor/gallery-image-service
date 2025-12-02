@@ -3,6 +3,9 @@ gallery:
     protected-services:
       user-service-url: ${USER_SERVICE_URL:http://user-service:8080}
       comment-service-url: ${COMMENT_SERVICE_URL:http://comment-service:8080}
+    internal-endpoints:
+      - path: /api/*/internal
+        method.name: GET
 
 spring:
   application:

@@ -98,4 +98,14 @@ public class ImageController {
         return ResponseEntity.ok(imageService.likeImage(imageId));
     }
 
+    @GetMapping(
+            path = "/{imageId}/internal",
+            headers = "X-System-Internal-Call",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ImageDto> getInternal(@PathVariable Long imageId) {
+        return ResponseEntity.ok()
+                .body(imageService.getByIdInternal(imageId));
+    }
+
 }

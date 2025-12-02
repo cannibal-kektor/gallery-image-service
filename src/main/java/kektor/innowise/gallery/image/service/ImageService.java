@@ -53,7 +53,7 @@ public class ImageService {
 
         s3Service.uploadToS3(uploadRequest.imageFile(), s3Key);
 
-        return enrichData(image, _ -> false);
+        return enrichData(image);
     }
 
     @Transactional(readOnly = true)
@@ -137,6 +137,12 @@ public class ImageService {
         eventPublisher.publishEvent(new ImageDeleted(imageId));
     }
 
+    @Transactional(readOnly = true)
+    public ImageDto getByIdInternal(Long imageId) {
+        Image image = imageRepository.findByIdExceptionally(imageId);
+        return enrichData(image);
+    }
+
     @TransactionalEventListener(classes = ImageDeleted.class, phase = TransactionPhase.AFTER_COMMIT)
     public void clearOrphanComments(ImageDeleted event) {
         commentService.deleteImageComments(event.imageId());
@@ -150,6 +156,10 @@ public class ImageService {
         return images.map(image -> enrichData(image, likedImageIds::contains));
     }
 
+    private ImageDto enrichData(Image image) {
+        return enrichData(image, _ -> false);
+    }
+
     private ImageDto enrichData(Image image, Predicate<Long> isLiked) {
         String url = s3Service.getSignedUrlForImage(image.getS3key());
         String username = userService.fetchUser(image.getUserId())
@@ -158,13 +168,10 @@ public class ImageService {
         return mapper.toDto(image, username, url, isLiked.test(image.getId()));
     }
 
-    private Long currentUserId() {
-        Object principal = SecurityContextHolder.getContext()
+    Long currentUserId() {
+        return ((UserPrincipal) SecurityContextHolder.getContext()
                 .getAuthentication()
-                .getPrincipal();
-        if (principal instanceof UserPrincipal user) {
-            return user.id();
-        } else
-            return 0L;
+                .getPrincipal())
+                .id();
     }
 }

@@ -12,6 +12,11 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <openapi-filename>image-service-openapi.yaml</openapi-filename>
+        <openapi-docs-url>api/images/v3/api-docs.yaml</openapi-docs-url>
+    </properties>
+
     <repositories>
         <repository>
             <id>github</id>
@@ -136,40 +141,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>start</goal>
-                            <goal>stop</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>
-                                <argument>--spring.profiles.active=smoke</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.springdoc</groupId>
-                <artifactId>springdoc-openapi-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-openapi-docs</id>
-                        <phase>integration-test</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <apiDocsUrl>http://localhost:8080/api/images/v3/api-docs.yaml</apiDocsUrl>
-                            <outputFileName>image-service-openapi.yaml</outputFileName>
-                            <outputDir>${project.basedir}/src/main/resources/openapi</outputDir>
-                            <failOnError>true</failOnError>
-                            <skip>false</skip>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

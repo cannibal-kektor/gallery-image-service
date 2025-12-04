@@ -114,7 +114,8 @@ jobs:
           path: target/
 
       - name: Run IT tests
-        run: mvn verify -Dskip.surefire.tests
+        run: mvn verify -Dskip.surefire.tests \
+          -Dspring-boot.repackage.skip=true
 
       - name: Upload IT failsafe reports
         uses: actions/upload-artifact@v4
@@ -232,8 +233,9 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=commit-
             type=ref,event=branch
+            type=ref,event=pr
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Log in to Docker Hub

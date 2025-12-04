@@ -1,9 +1,10 @@
 name: CI/CD Pipeline for Image Service
 on:
   push:
-    branches: [ main, test ]
+    branches:
+      - master
   pull_request:
-    branches: [ main ]
+    types: [opened, synchronize, reopened]
 
 env:
   JAVA_VERSION: '25'
@@ -35,7 +36,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Build
-        run: mvn clean package -DskipTests
+        run: mvn clean package -Dskip.surefire.tests
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4

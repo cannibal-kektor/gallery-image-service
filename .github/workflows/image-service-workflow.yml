@@ -251,6 +251,8 @@ jobs:
         with:
           secrets: |
             github_token=${{ secrets.GITHUB_TOKEN }}
+          build-contexts: |
+            maven-conf=./conf/mvn
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -8,6 +8,7 @@ import kektor.innowise.gallery.image.dto.UploadRequestDto;
 import kektor.innowise.gallery.image.dto.UserDto;
 import kektor.innowise.gallery.image.exception.ImageNotFoundException;
 import kektor.innowise.gallery.image.exception.NonAuthorizedImageAccessException;
+import kektor.innowise.gallery.image.exception.UserNotFoundException;
 import kektor.innowise.gallery.image.mapper.ImageMapper;
 import kektor.innowise.gallery.image.model.Image;
 import kektor.innowise.gallery.image.model.Like;
@@ -156,6 +157,25 @@ public class ImageServiceTest {
         assertThatThrownBy(() -> imageService.getById(100000L))
                 .isInstanceOf(ImageNotFoundException.class)
                 .hasMessageContaining("Image with id: (100000) not found");
+    }
+
+    @Test
+    void throwUserNotFoundException_When_UserDoesNotExist() {
+        when(imageRepository.findByIdExceptionally(1L))
+                .thenReturn(image);
+        when(s3Service.getSignedUrlForImage("users/1/test-s3-key"))
+                .thenReturn("https://s3.url/image.jpg");
+        when(userServiceClient.fetchUser(image.getUserId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->imageService.getById(1L))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("User with id: %d not found".formatted(image.getUserId()));
+
+        verify(imageRepository).findByIdExceptionally(1L);
+        verify(s3Service).getSignedUrlForImage("users/1/test-s3-key");
+        verify(userServiceClient).fetchUser(1L);
+
     }
 
     @Test

@@ -209,6 +209,15 @@ jobs:
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco-merged/jacoco.xml
           -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
 
+      - name: SonarCloud Quality Gate Check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.0
+        with:
+          pollingTimeoutSec: 600
+          scanMetadataReportFile: target/sonar/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   build-push-docker-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest

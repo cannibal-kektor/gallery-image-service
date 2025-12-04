@@ -279,4 +279,24 @@ public class ImageServiceIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
     }
+
+    @Test
+    void interServiceCallReturnImage_When_ImageExists() throws Exception {
+        stubFor(WireMock.get(urlPathEqualTo("/api/users/id/1"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(objectMapper.writeValueAsString(user))
+                        .withStatus(200)));
+
+        headers.add("X-System-Internal-Call", "testOriginService");
+
+        mockMvc.perform(get("/api/images/{id}/internal", 1L)
+                        .headers(headers)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.username").value(user.username()))
+                .andExpect(jsonPath("$.description").value("Test description 1"));
+    }
 }

@@ -200,10 +200,10 @@ jobs:
 
       - name: Debug JaCoCo report paths
         run: |
-          echo "Checking if merged report exists..."
-          ls -la target/site/jacoco-merged/ || echo "Directory not found"
-          echo "Checking default JaCoCo report locations..."
-          find target -name "jacoco.xml" 2>/dev/null || echo "No jacoco.xml found"
+          echo "Checking TESTS"
+          ls -la target|| echo "Directory not found"
+          ls -la target/failsafe-reports || echo "FAILSAFE Directory not found"
+          ls -la target/surefire-reports || echo "SUREFIRE Directory not found"
 
       - name: SonarQube analysis
         env:

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.time.temporal.ChronoUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -159,7 +160,7 @@ public class ImageServiceTest {
 
     @Test
     void returnWindowOfImages_When_GetAllWithValidScrollRequest() {
-        KeySetScrollRequest scrollRequest = createScrollRequest();
+        KeySetScrollRequest scrollRequest = createScrollRequest(null);
         Window<Image> imageWindow = createImageWindow();
 
         when(imageRepository.findAllFilteredBy(
@@ -180,6 +181,73 @@ public class ImageServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(2);
         verify(imageRepository).findAllFilteredBy(
+                scrollRequest.scrollPosition(),
+                scrollRequest.sort(),
+                scrollRequest.limit());
+        verify(userServiceClient, times(2)).fetchUser(1L);
+    }
+
+    @Test
+    void returnWindowOfImagesForTheLast10Days_When_GetAllWithValidScrollRequest() {
+        Instant last10Days = Instant.now().minus(10, DAYS);
+        KeySetScrollRequest scrollRequest = createScrollRequest(last10Days);
+        Window<Image> imageWindow = createImageWindow();
+
+        when(imageRepository.findAllFilteredByUploadedAtAfter(
+                scrollRequest.tillDate(),
+                scrollRequest.scrollPosition(),
+                scrollRequest.sort(),
+                scrollRequest.limit()))
+                .thenReturn(imageWindow);
+
+        when(likeRepository.findLikedImagesIdByUserFromSpecific(1L, List.of(1L, 2L)))
+                .thenReturn(Set.of(1L));
+        when(s3Service.getSignedUrlForImage(anyString()))
+                .thenReturn("https://s3.url/image.jpg");
+        when(userServiceClient.fetchUser(1L))
+                .thenReturn(Optional.of(new UserDto(1L, "testUsername", "testEmail")));
+
+        Window<ImageDto> result = imageService.getAll(scrollRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(2);
+        verify(imageRepository).findAllFilteredByUploadedAtAfter(
+                scrollRequest.tillDate(),
+                scrollRequest.scrollPosition(),
+                scrollRequest.sort(),
+                scrollRequest.limit());
+        verify(userServiceClient, times(2)).fetchUser(1L);
+    }
+
+    @Test
+    void returnWindowOfUserImagesForTheLast10Days_When_GetAllWithValidScrollRequest() {
+        Instant last10Days = Instant.now().minus(10, DAYS);
+        Long userId = 1L;
+        KeySetScrollRequest scrollRequest = createScrollRequest(last10Days);
+        Window<Image> imageWindow = createImageWindow();
+
+        when(imageRepository.findAllFilteredByUserIdAndUploadedAtAfter(
+                userId,
+                scrollRequest.tillDate(),
+                scrollRequest.scrollPosition(),
+                scrollRequest.sort(),
+                scrollRequest.limit()))
+                .thenReturn(imageWindow);
+
+        when(likeRepository.findLikedImagesIdByUserFromSpecific(1L, List.of(1L, 2L)))
+                .thenReturn(Set.of(1L));
+        when(s3Service.getSignedUrlForImage(anyString()))
+                .thenReturn("https://s3.url/image.jpg");
+        when(userServiceClient.fetchUser(1L))
+                .thenReturn(Optional.of(new UserDto(1L, "testUsername", "testEmail")));
+
+        Window<ImageDto> result = imageService.getUserImages(userId, scrollRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(2);
+        verify(imageRepository).findAllFilteredByUserIdAndUploadedAtAfter(
+                userId,
+                scrollRequest.tillDate(),
                 scrollRequest.scrollPosition(),
                 scrollRequest.sort(),
                 scrollRequest.limit());
@@ -298,7 +366,7 @@ public class ImageServiceTest {
         verify(userServiceClient).fetchUser(1L);
     }
 
-    KeySetScrollRequest createScrollRequest() {
+    KeySetScrollRequest createScrollRequest(Instant tillDate) {
         Sort sort = Sort.by(Sort.Direction.DESC, "uploadedAt");
         Limit limit = Limit.of(10);
         KeysetScrollPosition scrollPosition = ScrollPosition.keyset();
@@ -307,6 +375,7 @@ public class ImageServiceTest {
                 .sort(sort)
                 .limit(limit)
                 .scrollPosition(scrollPosition)
+                .tillDate(tillDate)
                 .build();
     }
 

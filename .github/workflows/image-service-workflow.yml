@@ -192,9 +192,6 @@ jobs:
       - name: Merge JaCoCo reports
         run: |
           mvn jacoco:merge@merge-unit-and-integration-reports
-#          mvn jacoco:merge \
-#            -Djacoco.destFile=target/jacoco-merged.exec \
-#            -Djacoco.execFiles=target/jacoco-unit.exec,target/jacoco-it.exec
 
           mvn jacoco:report \
             -Djacoco.dataFile=target/jacoco-merged.exec \

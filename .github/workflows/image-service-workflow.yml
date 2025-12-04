@@ -200,6 +200,13 @@ jobs:
             -Djacoco.dataFile=target/jacoco-merged.exec \
             -Djacoco.outputDirectory=target/site/jacoco-merged
 
+      - name: Debug JaCoCo report paths
+        run: |
+          echo "Checking if merged report exists..."
+          ls -la target/site/jacoco-merged/ || echo "Directory not found"
+          echo "Checking default JaCoCo report locations..."
+          find target -name "jacoco.xml" 2>/dev/null || echo "No jacoco.xml found"
+
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

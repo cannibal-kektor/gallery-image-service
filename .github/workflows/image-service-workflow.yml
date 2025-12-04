@@ -196,9 +196,7 @@ jobs:
       - name: Merge JaCoCo reports
         run: |
           mvn jacoco:merge@merge-unit-and-integration-reports
-          mvn jacoco:report \
-            -Djacoco.dataFile=target/jacoco-merged.exec \
-            -Djacoco.outputDirectory=target/site/jacoco-merged
+          mvn jacoco:report@merged-report
 
       - name: Debug JaCoCo report paths
         run: |

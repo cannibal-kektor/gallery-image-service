@@ -6,6 +6,8 @@ on:
     branches: [ main ]
 
 env:
+  JAVA_VERSION: '25'
+  SONAR_PROJECT_KEY: cannibal-kektor_gallery-image-service
   IMAGE_NAME: gallery-image-service
   DOCKER_REGISTRY: docker.io
 
@@ -14,54 +16,211 @@ permissions:
   packages: read
 
 jobs:
-  build-and-test:
-    name: Build + Test
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
-    env:
-      GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
 
-      - name: Prepare JDK-25 with configured repository cred
+      - name: Setup JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '25'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
-          server-id: 'github'
-#          server-username: ${{ github.actor }}
-#          server-password: ${{ secrets.GH_PACKAGES_TOKEN }}
-#          server-password: GH_PACKAGES_TOKEN
 
-      - name: Debug - Check generated Maven settings
-        run: cat ~/.m2/settings.xml || echo "Settings file not found"
+      - name: Build
+        run: mvn clean package -DskipTests
 
-      - name: Cache Maven dependencies
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-artifact-jar
+          path: target/*.jar
+          retention-days: 2
+
+      - name: Upload target build folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: target/
+          retention-days: 2
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: target/
+
+      - name: Run Unit tests
+        run: mvn test
+
+      - name: Upload unit-test surefire reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-test-reports
+          path: target/surefire-reports/
+          retention-days: 2
+
+      - name: Upload unit tests coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-coverage-unit-report
+          path: target/jacoco-unit.exec
+          retention-days: 2
+
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: target/
+
+      - name: Run IT tests
+        run: mvn verify -Dskip.surefire.tests
+
+      - name: Upload IT failsafe reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: it-test-reports
+          path: target/failsafe-reports/
+          retention-days: 2
+
+      - name: Upload it tests coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-coverage-it-report
+          path: target/jacoco-it.exec
+          retention-days: 2
+
+  code-analysis:
+    name: SonarQube Code Analysis
+    runs-on: ubuntu-latest
+    needs: [ unit-tests, integration-tests ]
+    permissions:
+      security-events: write
+      pull-requests: write
+#    if: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache SonarQube packages
         uses: actions/cache@v4
         with:
-          path: ~/.m2/repository
-          key: maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: maven-
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
-      - name: Build and run unit tests
-        run: mvn clean test
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: target/
 
-      - name: Run integration tests
-        run: mvn integration-test
+      - name: Download surefire test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: surefire-test-reports
+          path: target/surefire-reports
 
-      - name: Verify smoke run
-        run: mvn verify -DskipTests=true
+      - name: Download failsafe test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: it-test-reports
+          path: target/failsafe-reports
 
-#      - name: Upload test reports
-#        uses: actions/upload-artifact@v4
-#        if: always()
-#        with:
-#          name: test-reports
-#          path: |
-#            target/surefire-reports/
-#            target/failsafe-reports/
+      - name: Download unit coverage exec
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-coverage-unit-report
+          path: target/
+
+      - name: Download IT coverage exec
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-coverage-it-report
+          path: target/
+
+      - name: Merge JaCoCo reports
+        run: |
+          mvn jacoco:merge \
+            -Djacoco.destFile=target/jacoco-merged.exec \
+            -Djacoco.execFiles=target/jacoco-unit.exec,target/jacoco-it.exec
+
+          mvn jacoco:report \
+            -Djacoco.dataFile=target/jacoco-merged.exec \
+            -Djacoco.outputDirectory=target/site/jacoco-merged
+
+      - name: SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco-merged/jacoco.xml
+          -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
+          ${{ github.event_name == 'pull_request' && '
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+            -Dsonar.pullrequest.branch=${{ github.event.pull_request.head.ref }}
+            -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }}
+            -Dsonar.pullrequest.github.repository=${{ github.repository }}
+          ' || '' }}
+
+      - name: SonarCloud Quality Gate Check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.0
+        if: always()
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: "Show SonarQube Quality Gate Status value"
+        run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"

@@ -208,12 +208,6 @@ jobs:
           -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco-merged/jacoco.xml
           -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
-          ${{ github.event_name == 'pull_request' && '
-            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
-            -Dsonar.pullrequest.branch=${{ github.event.pull_request.head.ref }}
-            -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }}
-            -Dsonar.pullrequest.github.repository=${{ github.repository }}
-          ' || '' }}
 
       - name: SonarCloud Quality Gate Check
         id: sonarqube-quality-gate-check

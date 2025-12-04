@@ -114,7 +114,9 @@ jobs:
           path: target/
 
       - name: Run IT tests
-        run: mvn verify -Dskip.surefire.tests \
+        run: >
+          mvn verify
+          -Dskip.surefire.tests
           -Dspring-boot.repackage.skip=true
 
       - name: Upload IT failsafe reports

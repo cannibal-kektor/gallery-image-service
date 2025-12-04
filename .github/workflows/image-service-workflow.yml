@@ -196,13 +196,6 @@ jobs:
           mvn jacoco:merge@merge-unit-and-integration-reports
           mvn jacoco:report@merged-report
 
-      - name: Debug JaCoCo report paths
-        run: |
-          echo "Checking TESTS"
-          ls -la target|| echo "Directory not found"
-          ls -la target/failsafe-reports || echo "FAILSAFE Directory not found"
-          ls -la target/surefire-reports || echo "SUREFIRE Directory not found"
-
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -252,8 +245,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

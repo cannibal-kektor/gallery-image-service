@@ -14,8 +14,6 @@ import kektor.innowise.gallery.image.model.Image;
 import kektor.innowise.gallery.image.model.Like;
 import kektor.innowise.gallery.image.repository.ImageRepository;
 import kektor.innowise.gallery.image.repository.LikeRepository;
-import kektor.innowise.gallery.security.HeaderAuthenticationToken;
-import kektor.innowise.gallery.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,9 +27,6 @@ import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Window;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
@@ -60,6 +55,8 @@ public class ImageServiceTest {
     @Mock
     UserServiceClient userServiceClient;
     @Mock
+    SecurityService securityService;
+    @Mock
     ApplicationEventPublisher eventPublisher;
     @Mock
     ImageMapper mapper;
@@ -79,15 +76,6 @@ public class ImageServiceTest {
         uploadRequestDto = new UploadRequestDto("Test description", multipartFile);
     }
 
-    @BeforeEach
-    void setUpSecurity() {
-        UserPrincipal userPrincipal = new UserPrincipal(userId, "testuser", "test@email.com");
-        HeaderAuthenticationToken authenticationToken = new HeaderAuthenticationToken(userPrincipal);
-        SecurityContext securityContext = new SecurityContextImpl();
-        securityContext.setAuthentication(authenticationToken);
-        SecurityContextHolder.setContext(securityContext);
-    }
-
     Image createTestImage() {
         Image img = new Image();
         img.setId(1L);
@@ -102,7 +90,8 @@ public class ImageServiceTest {
 
     @Test
     void saveImage_When_ValidUploadRequest() {
-        when(s3Service.generateS3Key(multipartFile, 1L))
+        when(securityService.currentUserId()).thenReturn(userId);
+        when(s3Service.generateS3Key(multipartFile, userId))
                 .thenReturn("users/1/test-s3-key");
         when(mapper.toModel(uploadRequestDto, 1L, "users/1/test-s3-key"))
                 .thenReturn(image);
@@ -128,6 +117,7 @@ public class ImageServiceTest {
 
     @Test
     void returnImageDto_When_ImageExists() {
+        when(securityService.currentUserId()).thenReturn(userId);
         when(imageRepository.findByIdExceptionally(1L))
                 .thenReturn(image);
         when(s3Service.getSignedUrlForImage("users/1/test-s3-key"))
@@ -183,6 +173,7 @@ public class ImageServiceTest {
         KeySetScrollRequest scrollRequest = createScrollRequest(null);
         Window<Image> imageWindow = createImageWindow();
 
+        when(securityService.currentUserId()).thenReturn(userId);
         when(imageRepository.findAllFilteredBy(
                 scrollRequest.scrollPosition(),
                 scrollRequest.sort(),
@@ -213,6 +204,7 @@ public class ImageServiceTest {
         KeySetScrollRequest scrollRequest = createScrollRequest(last10Days);
         Window<Image> imageWindow = createImageWindow();
 
+        when(securityService.currentUserId()).thenReturn(userId);
         when(imageRepository.findAllFilteredByUploadedAtAfter(
                 scrollRequest.tillDate(),
                 scrollRequest.scrollPosition(),
@@ -246,6 +238,7 @@ public class ImageServiceTest {
         KeySetScrollRequest scrollRequest = createScrollRequest(last10Days);
         Window<Image> imageWindow = createImageWindow();
 
+        when(securityService.currentUserId()).thenReturn(userId);
         when(imageRepository.findAllFilteredByUserIdAndUploadedAtAfter(
                 userId,
                 scrollRequest.tillDate(),
@@ -276,9 +269,10 @@ public class ImageServiceTest {
 
     @Test
     void updateImage_When_UserIsOwner() {
-        when(imageRepository.findByIdAuthorized(1L, 1L))
+        when(securityService.currentUserId()).thenReturn(userId);
+        when(imageRepository.findByIdAuthorized(1L, userId))
                 .thenReturn(image);
-        when(likeRepository.existsByImageIdAndUserId(1L, 1L))
+        when(likeRepository.existsByImageIdAndUserId(1L, userId))
                 .thenReturn(true);
         when(s3Service.getSignedUrlForImage("users/1/test-s3-key"))
                 .thenReturn("https://s3.url/image.jpg");
@@ -302,12 +296,7 @@ public class ImageServiceTest {
 
     @Test
     void throwNonAuthorizedAccessException_When_UserIsNotOwner() {
-        UserPrincipal notOwner = new UserPrincipal(2L, "notOwner", "notOwner@example.com");
-        HeaderAuthenticationToken authenticationToken = new HeaderAuthenticationToken(notOwner);
-        SecurityContext securityContext = new SecurityContextImpl();
-        securityContext.setAuthentication(authenticationToken);
-        SecurityContextHolder.setContext(securityContext);
-
+        when(securityService.currentUserId()).thenReturn(2L);
         when(imageRepository.findByIdAuthorized(1L, 2L))
                 .thenThrow(new NonAuthorizedImageAccessException(2L, 1L));
 
@@ -319,6 +308,7 @@ public class ImageServiceTest {
 
     @Test
     void deleteImage_When_UserIsOwner() {
+        when(securityService.currentUserId()).thenReturn(userId);
         when(imageRepository.findByIdAuthorized(1L, 1L))
                 .thenReturn(image);
 
@@ -330,6 +320,7 @@ public class ImageServiceTest {
 
     @Test
     void likeImage_When_LikeDoesNotExist() {
+        when(securityService.currentUserId()).thenReturn(userId);
         when(likeRepository.findIdByImageIdAndUserId(1L, 1L))
                 .thenReturn(Optional.empty());
         when(mapper.toModel(1L, 1L))
@@ -361,6 +352,7 @@ public class ImageServiceTest {
     void unlikeImage_When_LikeExists() {
         Like like = new Like();
         like.setId(1L);
+        when(securityService.currentUserId()).thenReturn(userId);
         when(likeRepository.findIdByImageIdAndUserId(1L, 1L)).thenReturn(Optional.of(like));
         when(likeRepository.deleteLikeById(1L)).thenReturn(1);
         when(imageRepository.findByIdExceptionally(1L))

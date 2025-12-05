@@ -13,13 +13,11 @@ import kektor.innowise.gallery.image.model.Image;
 import kektor.innowise.gallery.image.model.Like;
 import kektor.innowise.gallery.image.repository.ImageRepository;
 import kektor.innowise.gallery.image.repository.LikeRepository;
-import kektor.innowise.gallery.security.UserPrincipal;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Window;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
@@ -39,6 +37,7 @@ public class ImageService {
     S3ImageService s3Service;
     CommentServiceClient commentService;
     UserServiceClient userService;
+    SecurityService securityService;
     ApplicationEventPublisher eventPublisher;
     ImageMapper mapper;
 
@@ -169,9 +168,6 @@ public class ImageService {
     }
 
     Long currentUserId() {
-        return ((UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal())
-                .id();
+        return securityService.currentUserId();
     }
 }

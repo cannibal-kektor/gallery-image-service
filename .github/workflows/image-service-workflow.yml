@@ -30,12 +30,10 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
-          server-id: 'github'
-          server-password: GH_PACKAGES_TOKEN
 
       - name: Build
         env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: mvn clean package -Dskip.surefire.tests
 
       - name: Upload JAR
@@ -74,6 +72,8 @@ jobs:
           path: target/
 
       - name: Run Unit tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: mvn test
 
       - name: Upload unit-test surefire reports
@@ -114,6 +114,8 @@ jobs:
           path: target/
 
       - name: Run IT tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: >
           mvn verify
           -Dskip.surefire.tests
@@ -195,6 +197,8 @@ jobs:
           path: target/
 
       - name: Merge JaCoCo reports
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: |
           mvn jacoco:merge@merge-unit-and-integration-reports
           mvn jacoco:report@merged-report

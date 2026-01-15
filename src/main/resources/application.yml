@@ -1,3 +1,6 @@
+app:
+  version: @project.version@
+
 gallery:
   security:
     protected-services:
@@ -76,6 +79,32 @@ spring:
   web:
     resources:
       add-mappings: false
+
+springdoc:
+  api-docs:
+    enabled: false
+
+---
+#Configuration for openapi
+spring:
+  config:
+    activate:
+      on-profile: dev, smoke
+gallery:
+  security:
+    open-endpoints:
+      - path: /api/images/v3/*
+        method.name: GET
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api/images/v3/api-docs
+  writer-with-default-pretty-printer: true
+  model-converters:
+    pageable-converter:
+      enabled: true
+
+---
 
 ---
 #Configuration for dev profile

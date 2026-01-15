@@ -1,5 +1,7 @@
 app:
   version: @project.version@
+  broker:
+    like-event-topic: like-events
 
 gallery:
   security:
@@ -66,6 +68,39 @@ spring:
       cache-null-values: false
     caffeine:
       spec: initialCapacity=200,maximumSize=500,expireAfterWrite=30m
+
+  kafka:
+    bootstrap-servers:
+      - ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      client-id: ${HOSTNAME}-producer
+      acks: all
+      batch-size: 16384
+      buffer-memory: 16MB
+      key-serializer: org.apache.kafka.common.serialization.LongSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      retries: 2147483647
+      properties:
+        spring.json.type.mapping: likeEvent:kektor.innowise.gallery.image.msg.LikeEventMessage
+        partitioner.ignore.keys: false
+        enable.idempotence: true
+        delivery.timeout.ms: 60000
+        request.timeout.ms: 10000
+        max.block.ms: 5000
+        linger.ms: 5
+
+  task:
+    execution:
+      threadNamePrefix: Async-Thread-
+      pool:
+        core-size: 4
+        max-size: 10
+        allow-core-thread-timeout: true
+        keep-alive: PT30S
+        queue-capacity: 200
+      shutdown:
+        await-termination: true
+        await-termination-period: PT30S
 
   servlet:
     multipart:

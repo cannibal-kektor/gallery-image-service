@@ -1,0 +1,580 @@
+openapi: 3.1.0
+info:
+  title: Image Service API - Image Gallery Microservices
+  description: |
+    Image Management Microservice for the Image Gallery application.
+    This service handles image upload, storage, retrieval.
+    Provides comprehensive image functionality with AWS S3 integration
+    and advanced pagination.
+
+    ## Features
+    - Image upload with validation (JPEG, PNG)
+    - Advanced keyset pagination for efficient scrolling
+    - Image liking system
+    - User-specific image galleries
+    - Secure S3 storage with signed URLs
+  contact:
+    name: cannibal-kektor
+    url: https://github.com/cannibal-kektor
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  version: 1.0-SNAPSHOT
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+security:
+- bearer-token: []
+- internal-service: []
+tags:
+- name: Image Management API
+  description: API for managing images in the Image Gallery system.
+paths:
+  /api/images/{imageId}:
+    put:
+      tags:
+      - Image Management API
+      summary: Update image description
+      description: Updates the description of an existing image.
+      operationId: update
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        description: Updated image description
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRequestDto"
+        required: true
+      responses:
+        "200":
+          description: Actual image dto returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageDto"
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+    delete:
+      tags:
+      - Image Management API
+      summary: Delete image
+      description: Deletes a specific image and its associated comments
+      operationId: delete
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Image deleted successfully
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+  /api/images/{imageId}/like:
+    post:
+      tags:
+      - Image Management API
+      summary: Like or unlike image
+      description: |
+        Toggles like status for a specific image.
+        If the image is already liked, it will be unliked.
+      operationId: likeImage
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Actual image dto returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageDto"
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+  /api/images/upload:
+    post:
+      tags:
+      - Image Management API
+      summary: Upload new image
+      description: |
+        Uploads a new image to the gallery with description.
+        Supported formats: JPEG, PNG. Maximum file size: 50MB.
+      operationId: upload
+      requestBody:
+        description: Image upload request with file and description
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadRequestDto"
+        required: true
+      responses:
+        "200":
+          description: Actual image dto returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageDto"
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+  /api/images:
+    get:
+      tags:
+      - Image Management API
+      summary: Get all images with pagination
+      description: Retrieves paginated images using keyset pagination for scrolling
+      operationId: getAll
+      parameters:
+      - $ref: "#/components/parameters/windowSize"
+      - $ref: "#/components/parameters/sortCriteria"
+      - $ref: "#/components/parameters/tillDate"
+      - $ref: "#/components/parameters/cursorUploadedAt"
+      - $ref: "#/components/parameters/cursorLikesCount"
+      - $ref: "#/components/parameters/cursorId"
+      responses:
+        "200":
+          description: Images retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ImageDto"
+                  hasNext:
+                    type: boolean
+                    description: Whether more results are available
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+  /api/images/{imageId}/internal:
+    get:
+      tags:
+      - Image Management API
+      summary: Get image by ID for internal usage
+      description: Retrieves a specific image by its id by internal service call
+      operationId: getInternal
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: X-System-Internal-Call
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Actual image dto returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageDto"
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - internal-service: []
+  /api/images/{id}:
+    get:
+      tags:
+      - Image Management API
+      summary: Get image by ID
+      description: Retrieves a specific image by its id.
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Actual image dto returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageDto"
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+      - internal-service: []
+  /api/images/username/{username}:
+    get:
+      tags:
+      - Image Management API
+      summary: Get user images by username
+      description: Retrieves paginated images for a specific user by username using
+        keyset pagination
+      operationId: getUserImages
+      parameters:
+      - $ref: "#/components/parameters/windowSize"
+      - $ref: "#/components/parameters/sortCriteria"
+      - $ref: "#/components/parameters/tillDate"
+      - $ref: "#/components/parameters/cursorUploadedAt"
+      - $ref: "#/components/parameters/cursorLikesCount"
+      - $ref: "#/components/parameters/cursorId"
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Images retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ImageDto"
+                  hasNext:
+                    type: boolean
+                    description: Whether more results are available
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+  /api/images/user/current:
+    get:
+      tags:
+      - Image Management API
+      summary: Get current user images
+      description: Retrieves paginated images for the currently authenticated user
+        using keyset pagination.
+      operationId: getCurrentUserImages
+      parameters:
+      - $ref: "#/components/parameters/windowSize"
+      - $ref: "#/components/parameters/sortCriteria"
+      - $ref: "#/components/parameters/tillDate"
+      - $ref: "#/components/parameters/cursorUploadedAt"
+      - $ref: "#/components/parameters/cursorLikesCount"
+      - $ref: "#/components/parameters/cursorId"
+      responses:
+        "200":
+          description: Images retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ImageDto"
+                  hasNext:
+                    type: boolean
+                    description: Whether more results are available
+        "400":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "403":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "429":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "500":
+          $ref: "#/components/responses/ProblemDetailResponse"
+        "503":
+          $ref: "#/components/responses/ProblemDetailResponse"
+      security:
+      - bearer-token: []
+components:
+  schemas:
+    UpdateRequestDto:
+      type: object
+      description: Request model for updating image description
+      properties:
+        description:
+          type: string
+          description: Image description text
+          example: Test image description
+          maxLength: 1000
+          minLength: 0
+          readOnly: true
+      required:
+      - description
+    ImageDto:
+      type: object
+      description: Image data model containing image information
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique image ID
+          example: 12345
+          readOnly: true
+        userId:
+          type: integer
+          format: int64
+          description: User ID who uploaded the image
+          example: 67890
+          readOnly: true
+        username:
+          type: string
+          description: Username of the image uploader
+          example: alex_white
+          readOnly: true
+        url:
+          type: string
+          description: Signed S3 URL for image access (valid for 2 hours)
+          example: https://images.s3.amazonaws.com/users/67890/abc123.jpg?X-Amz-Signature=...
+          readOnly: true
+        description:
+          type: string
+          description: Image description text
+          example: Test image description
+          readOnly: true
+        uploadedAt:
+          type: string
+          format: date-time
+          description: Image upload timestamp
+          example: 2025-11-01T10:30:00Z
+          readOnly: true
+        likesCount:
+          type: integer
+          format: int32
+          description: Number of likes the image
+          example: 42
+          readOnly: true
+        isLiked:
+          type: boolean
+          description: Whether the current user has liked this image
+          example: true
+          readOnly: true
+    UploadRequestDto:
+      type: object
+      description: Request model for uploading a new image to the gallery
+      properties:
+        description:
+          type: string
+          description: Image description text
+          example: Test image description
+          maxLength: 1000
+          minLength: 0
+        imageFile:
+          type: string
+          format: binary
+          description: "Image file to upload (JPEG, PNG, max 50MB)"
+      required:
+      - description
+      - imageFile
+    ProblemDetail:
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+  responses:
+    ProblemDetailResponse:
+      description: RFC 7807 Error response
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+  parameters:
+    windowSize:
+      name: size
+      in: query
+      description: Number of items per window
+      schema:
+        type: integer
+        format: int32
+        maximum: 100
+        minimum: 1
+    sortCriteria:
+      name: sort
+      in: query
+      description: Sorting criteria
+      schema:
+        type: string
+        example: "uploadedAt,desc"
+    tillDate:
+      name: tillDate
+      in: query
+      description: Filter images uploaded after this date (ISO format)
+      schema:
+        type: string
+        format: date-time
+        example: 2025-11-01T10:30:00Z
+    cursorUploadedAt:
+      name: cursor-last-uploadedAt
+      in: query
+      description: Cursor for keyset pagination - last uploadedAt value
+      schema:
+        type: string
+        format: date-time
+        example: 2025-11-01T10:30:00Z
+    cursorLikesCount:
+      name: cursor-last-likesCount
+      in: query
+      description: Cursor for keyset pagination - last likesCount value
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    cursorId:
+      name: cursor-last-id
+      in: query
+      description: Cursor for keyset pagination - last image ID
+      schema:
+        type: integer
+        format: int64
+  securitySchemes:
+    bearer-token:
+      type: http
+      description: |
+        JWT authentication token obtained from the Authentication Service.
+        The API Gateway validates the token and forwards user information in headers:
+        - X-User-Id: User identifier
+        - X-User-Email: User email address
+        - X-User-Username: User username
+      scheme: bearer
+      bearerFormat: JWT
+    internal-service:
+      type: apiKey
+      description: |
+        Internal service authentication for inter-service communication.
+        Requires the X-System-Internal-Call header with the origin service name.
+        Used for service-to-service calls within the microservices ecosystem.
+      name: X-System-Internal-Call
+      in: header

@@ -1,6 +1,7 @@
 package kektor.innowise.gallery.image.controller;
 
 import jakarta.validation.Valid;
+import kektor.innowise.gallery.image.controller.openapi.ImageServiceOpenApi;
 import kektor.innowise.gallery.image.dto.ImageDto;
 import kektor.innowise.gallery.image.dto.KeySetScrollRequest;
 import kektor.innowise.gallery.image.dto.UpdateRequestDto;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/images")
 @RequiredArgsConstructor
-public class ImageController {
+public class ImageController implements ImageServiceOpenApi {
 
     final ImageService imageService;
 
@@ -35,6 +36,7 @@ public class ImageController {
             path = "/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<ImageDto> get(@PathVariable Long id) {
         return ResponseEntity.ok()
                 .body(imageService.getById(id));
@@ -45,6 +47,7 @@ public class ImageController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces =  MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<ImageDto> upload(@Valid @ModelAttribute UploadRequestDto uploadRequest) {
         return ResponseEntity.ok()
                 .body(imageService.save(uploadRequest));
@@ -54,6 +57,7 @@ public class ImageController {
             path = "/{imageId}",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<ImageDto> update(@PathVariable Long imageId,
                                            @Valid @RequestBody UpdateRequestDto updateRequest) {
         return ResponseEntity.ok()
@@ -61,6 +65,7 @@ public class ImageController {
     }
 
     @DeleteMapping("/{imageId}")
+    @Override
     public ResponseEntity<Void> delete(@PathVariable Long imageId) {
         imageService.deletePost(imageId);
         return ResponseEntity.ok().build();
@@ -68,6 +73,7 @@ public class ImageController {
 
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Override
     public ResponseEntity<Window<ImageDto>> getAll(KeySetScrollRequest scrollRequest) {
         return ResponseEntity.ok()
                 .body(imageService.getAll(scrollRequest));
@@ -77,6 +83,7 @@ public class ImageController {
             path = "/username/{username}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<Window<ImageDto>> getUserImages(@PathVariable String username,
                                                           KeySetScrollRequest scrollRequest) {
         return ResponseEntity.ok()
@@ -87,6 +94,7 @@ public class ImageController {
             path = "/user/current",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<Window<ImageDto>> getCurrentUserImages(KeySetScrollRequest scrollRequest,
                                                                  @AuthenticationPrincipal UserPrincipal user) {
         return ResponseEntity.ok()
@@ -94,6 +102,7 @@ public class ImageController {
     }
 
     @PostMapping("/{imageId}/like")
+    @Override
     public ResponseEntity<ImageDto> likeImage(@PathVariable Long imageId) {
         return ResponseEntity.ok(imageService.likeImage(imageId));
     }
@@ -103,6 +112,7 @@ public class ImageController {
             headers = "X-System-Internal-Call",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @Override
     public ResponseEntity<ImageDto> getInternal(@PathVariable Long imageId) {
         return ResponseEntity.ok()
                 .body(imageService.getByIdInternal(imageId));

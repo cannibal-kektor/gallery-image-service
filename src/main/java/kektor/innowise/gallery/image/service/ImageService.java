@@ -1,5 +1,6 @@
 package kektor.innowise.gallery.image.service;
 
+import kektor.innowise.gallery.image.aspect.PublishLikeEvent;
 import kektor.innowise.gallery.image.dto.ImageDeleted;
 import kektor.innowise.gallery.image.dto.ImageDto;
 import kektor.innowise.gallery.image.dto.KeySetScrollRequest;
@@ -102,6 +103,7 @@ public class ImageService {
         return getUserImages(userId, scrollRequest);
     }
 
+    @PublishLikeEvent
     @Transactional
     public ImageDto likeImage(Long imageId) {
         Long userId = currentUserId();
